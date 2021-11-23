@@ -1497,6 +1497,8 @@ var svg_db = {
         if (text !== '') {
           // 处理排版样式
           if (that.option.isPasteTypesetting) {
+            // 替换内容中间的全角空格为普通空格
+            text = text.replaceAll(/　+/, ' ')
             // 移除开头回车空格
             text = text.replaceAll(/^\s+/, '')
             // 将内容中间换行空格替换成换行
