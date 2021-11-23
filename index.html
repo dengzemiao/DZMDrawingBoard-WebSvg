@@ -200,6 +200,10 @@
         var dbEl = document.getElementById('drawing-board')
         // 注册
         svg_db.register(dbEl, w, h)
+        // 配置画板最大高度尺寸
+        // 最大高度（画板的最大高度尺寸，isResize = true 时才生效）
+        // 有画板的最大高度尺寸 'text(文本)' 才会支持缩放，否则不会进行缩放，比例按 1 处理，其他笔画类型不受影响。
+        svg_db.option.maxHeight = 400
         // 设置默认画笔类型
         setStrokeType('arrow')
       })

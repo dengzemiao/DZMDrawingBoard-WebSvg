@@ -109,6 +109,10 @@ var svg_db = {
       fontWeight: option.fontWeight || 400,
       // 渲染文字行间距（行高 + lineSpace）
       fontLineSpace: option.lineSpace || 5,
+      // 最大高度（画板的最大高度尺寸，isResize = true 时才生效）
+      // 有画板的最大高度尺寸 'text(文本)' 才会支持缩放，否则不会进行缩放，比例按 1 处理，其他笔画类型不受影响。
+      maxHeight: option.maxHeight || 0,
+      // 有输入框时，是否在失去焦点的时候进行移除，默认(false)是再次点击画板才会移除。
       // 是否可以编辑
       isEdit: option.isEdit || true,
       // 是否填充颜色（箭头类型）
@@ -116,13 +120,9 @@ var svg_db = {
       // 显示编辑矩形框（目前支持：'text(文本)' 其他画笔类型不需要支持）
       isShowEditRect: option.isShowEditRect || true,
       // 是否支持窗口缩放 重新调整元素坐标
-      isResize: option.isFill || true,
+      isResize: option.isResize || true,
       // 文本框贴贴文本内容排版优化（false：原格式，true：优化格式，去除多余的空格）
       isPasteTypesetting: option.isPasteTypesetting || true,
-      // 最大高度（图片/视频放大之后的最大高度尺寸，isResize = true 时才生效）
-      // 有最大高度才可以使用 'text(文本)' 画笔类型，其他画笔类型可以不不需要传。
-      maxHeight: option.maxHeight || 400,
-      // 有输入框时，是否在失去焦点的时候进行移除，默认(false)是再次点击画板才会移除。
       isInputBlurRemove: option.isInputBlurRemove || false,
       // 输入框边框提示文字
       inputPlaceholder: (typeof option.inputPlaceholder === 'string') ? option.inputPlaceholder : '请输入文字',
@@ -197,10 +197,10 @@ var svg_db = {
     this.dbEl.appendChild(this.svgWrapperEl)
     // 注册鼠标监听
     this.mouseRegister()
+    // 初始化缩放
+    this.onScale()
     // 窗口变化监听
     if (this.option.isResize) {
-      // 初始化缩放
-      this.onScale()
       // 添加缩放
       window.addEventListener('resize', onResize)
     }
@@ -1133,7 +1133,7 @@ var svg_db = {
       strokeEl.setAttribute('ry', ry)
     } else if (stroke.type === 'text') {
       // 文本 - 处理缩放
-      var scale = this.toFixed(svgSize.height / this.option.maxHeight)
+      var scale = this.scaleValue(svgSize)
       var fontSize = this.toFixed(stroke.fontSize * scale)
       var fontWeight = fontWeight
       var fontLineSpace = this.toFixed(stroke.fontLineSpace * scale)
@@ -1299,7 +1299,7 @@ var svg_db = {
         // 坐标
         var width = maxx - minx
         var height = maxy - miny
-        var scale = this.toFixed(svgSize.height / this.option.maxHeight)
+        var scale = this.scaleValue(svgSize)
         var space = this.option.inputPadding * scale
         minx -= space
         miny -= space
@@ -1706,7 +1706,7 @@ var svg_db = {
       this.inputEl.style.height = `${height}px`
     }
     // 计算最大 maxx/maxy
-    var scale = this.toFixed(svgSize.height / this.option.maxHeight)
+    var scale = this.scaleValue(svgSize)
     var minx = this.toFixed(stroke.minx * svgSize.width)
     var miny = this.toFixed(stroke.miny * svgSize.height)
     stroke.maxx = (minx + width * scale) / svgSize.width
@@ -1718,7 +1718,7 @@ var svg_db = {
       // 获取画板宽高
       var stroke = this.inputStroke
       var svgSize = this.svgSize()
-      var scale = this.toFixed(svgSize.height / this.option.maxHeight)
+      var scale = this.scaleValue(svgSize)
       var space = (this.option.inputPadding + this.option.inputBoderWidth) * scale
       // 开始/结束坐标换算
       var minx = this.toFixed(stroke.minx * svgSize.width) - space
@@ -1782,6 +1782,13 @@ var svg_db = {
     }
     // 返回
     return { width, height }
+  },
+  // 获取缩放比例
+  scaleValue (svgSize) {
+    // 获取画板宽高
+    var svgSize = svgSize || this.svgSize()
+    // 计算缩放比例，有最大高度则计算缩放比例，没有则按不缩放处理
+    return this.option.maxHeight ? this.toFixed(svgSize.height / this.option.maxHeight) : 1
   },
   // 自定义文本框全选内容
   selectText (el) {
