@@ -1,3 +1,5 @@
+// 作者：dengzemiao 2021-11-23
+
 // 命名空间
 var NS_SVG = 'http://www.w3.org/2000/svg'
 var NS_XLINK = 'http://www.w3.org/1999/xlink'
