@@ -109,7 +109,7 @@ var svg_db = {
       fontWeight: option.fontWeight || 400,
       // 渲染文字行间距（行高 + lineSpace）
       fontLineSpace: option.lineSpace || 5,
-      // 最大高度（画板的最大高度尺寸，isResize = true 时才生效）
+      // 最大高度（画板的最大高度尺寸）
       // 有画板的最大高度尺寸 'text(文本)' 才会支持缩放，否则不会进行缩放，比例按 1 处理，其他笔画类型不受影响。
       maxHeight: option.maxHeight || 0,
       // 有输入框时，是否在失去焦点的时候进行移除，默认(false)是再次点击画板才会移除。
