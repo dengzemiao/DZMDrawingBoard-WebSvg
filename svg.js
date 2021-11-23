@@ -56,6 +56,8 @@ var svg_db = {
   hoverInputEl: null,
   // 鼠标监听是否注册
   isMouseRegister: false,
+  // 是否正常新建图形过程中
+  isNewStroke: false,
   // 位置坐标计算保留几位小数点
   toFixedNumber: 1,
   // 编辑鼠标显示状态
@@ -141,7 +143,11 @@ var svg_db = {
       // 进入编辑状态后，操作圆圈的内部圆心填充颜色
       editFillColor: option.editFillColor || '#fff',
       // 创建时鼠标移动多少距离才算正式画笔画，以免点击之后误操作
-      effectiveOffset: option.effectiveOffset ||  { x: 2, y: 2 }
+      effectiveOffset: option.effectiveOffset ||  { x: 2, y: 2 },
+      // 新建元素鼠标样式(画板默认鼠标样式)
+      editNewCursor: 'crosshair',
+      // 移动元素鼠标样式
+      editMoveCursor: 'grab'
     }
   },
   // 注册画板
@@ -152,6 +158,8 @@ var svg_db = {
     if (this.dbEl) { return }
     // 记录
     this.dbEl = el
+    // 初始化配置
+    this.initOption()
     // 创建
     this.svgWrapperEl = document.createElement('div')
     this.svgEl = document.createElementNS(NS_SVG, 'svg')
@@ -160,6 +168,7 @@ var svg_db = {
     this.svgEl.setAttribute('height', '100%')
     this.svgEl.style.userSelect = 'none'
     this.svgEl.style.webkitUserSelect = 'none'
+    this.svgEl.style.cursor = this.option.editNewCursor
     // 配置 wrapper 属性
     this.svgWrapperEl.className = 'svg-wrapper'
     this.svgWrapperEl.style.position = 'relative'
@@ -188,8 +197,6 @@ var svg_db = {
     this.dbEl.appendChild(this.svgWrapperEl)
     // 注册鼠标监听
     this.mouseRegister()
-    // 初始化配置
-    this.initOption()
     // 窗口变化监听
     if (this.option.isResize) {
       // 初始化缩放
@@ -453,6 +460,8 @@ var svg_db = {
     var e = this.handleEventOffset(e)
     // 是否禁止编辑
     if (!this.option.isEdit) { return }
+    // 输入框有值，则检查按下时鼠标是否在输入框范围内
+    this.inputReactCheck(e)
     // 根据情况进行操作
     if (this.hoverEditEl) {
       // 移除输入框
@@ -495,8 +504,8 @@ var svg_db = {
   mouseDownEventNew (e) {
     // Safari 浏览器处理
     if (isSafari) { this.svgEl.style.pointerEvents = 'none' }
-    // 设置鼠标样式
-    this.svgEl.style.cursor = 'grab'
+    // 设置状态
+    this.isNewStroke = true
     // 引用
     var that = this
     var start = e
@@ -508,11 +517,13 @@ var svg_db = {
       // 文本
       this.inputCreate(e)
       // 设置鼠标样式
-      this.svgEl.style.cursor = 'default'
+      this.svgEl.style.cursor = this.option.editNewCursor
       // Safari 浏览器处理
       if (isSafari) { this.svgEl.style.pointerEvents = 'auto' }
       // 回调编辑对象
       if (this.selectStroke) { this.selectStroke(this.inputStroke) }
+      // 设置状态
+      this.isNewStroke = false
     } else {
       // 监听鼠标抬起
       this.svgWrapperEl.addEventListener('mouseup', mouseUpEvent)
@@ -523,8 +534,8 @@ var svg_db = {
     if (this.mousedown) { this.mousedown(e) }
     // 鼠标抬起
     function mouseUpEvent (e) {
-      // 设置鼠标样式
-      that.svgEl.style.cursor = 'default'
+      // 设置状态
+      that.isNewStroke = false
       // 处理坐标信息
       var e = that.handleEventOffset(e)
       // Safari 浏览器处理
@@ -568,7 +579,7 @@ var svg_db = {
   // 鼠标按下 - 移动
   mouseDownEventMove (e) {
     // 设置鼠标样式
-    this.svgEl.style.cursor = this.editMouseCursor || 'default'
+    this.svgEl.style.cursor = this.editMouseCursor || this.option.editNewCursor
     // 将 hover 元素转成当前操作对象
     this.strokeEl = this.hoverStrokeEl
     // 找到对应的笔画对象
@@ -617,7 +628,7 @@ var svg_db = {
       // Safari 浏览器处理
       if (isSafari) { that.svgEl.style.pointerEvents = 'auto' }
       // 设置鼠标样式
-      that.svgEl.style.cursor = 'default'
+      that.svgEl.style.cursor = that.option.editNewCursor
       // 移除鼠标抬起监听
       this.removeEventListener('mouseup', mouseUpEvent)
       // 移除鼠标移动监听
@@ -677,7 +688,7 @@ var svg_db = {
     // Safari 浏览器处理
     if (isSafari) { this.svgEl.style.pointerEvents = 'none' }
     // 设置鼠标样式
-    this.svgEl.style.cursor = this.editMouseCursor || 'default'
+    this.svgEl.style.cursor = this.editMouseCursor || this.option.editNewCursor
     // 获取编辑元素
     var stroke = this.editStroke
     var el = this.hoverEditEl
@@ -707,7 +718,7 @@ var svg_db = {
       // Safari 浏览器处理
       if (isSafari) { that.svgEl.style.pointerEvents = 'auto' }
       // 设置鼠标样式
-      that.svgEl.style.cursor = 'default'
+      that.svgEl.style.cursor = that.option.editNewCursor
       // 移除鼠标抬起监听
       this.removeEventListener('mouseup', mouseUpEvent)
       // 移除鼠标移动监听
@@ -800,7 +811,7 @@ var svg_db = {
     // Safari 浏览器处理
     if (isSafari) { this.svgEl.style.pointerEvents = 'none' }
     // 设置鼠标样式
-    this.svgEl.style.cursor = this.editMouseCursor || 'default'
+    this.svgEl.style.cursor = this.editMouseCursor || this.option.editNewCursor
     // 引用
     var stroke = this.inputStroke
     var that = this
@@ -823,7 +834,7 @@ var svg_db = {
       // Safari 浏览器处理
       if (isSafari) { that.svgEl.style.pointerEvents = 'auto' }
       // 设置鼠标样式
-      that.svgEl.style.cursor = 'default'
+      that.svgEl.style.cursor = that.option.editNewCursor
       // 移除鼠标抬起监听
       this.removeEventListener('mouseup', mouseUpEvent)
       // 移除鼠标移动监听
@@ -1003,8 +1014,6 @@ var svg_db = {
     }
     // 有笔画对象
     if (strokeEl) {
-      // 初始化样式
-      strokeEl.style.cursor = 'grab'
       // 坐标初始化
       this.drawChange(stroke, strokeEl)
       // 复制与添加到对应属性
@@ -1042,13 +1051,20 @@ var svg_db = {
       }
       // 添加 hover 事件，进入元素
       strokeEl.onmouseover = function () {
-        // 设置鼠标样式
-        that.editMouseCursor = this.style.cursor
-        // 记录
-        that.hoverStrokeEl = this
+        // 是否正在新建，在新建则不需要替换鼠标样式
+        if (!that.isNewStroke) {
+          // 初始化样式
+          this.style.cursor = that.option.editMoveCursor
+          // 设置鼠标样式
+          that.editMouseCursor = that.option.editMoveCursor
+          // 记录
+          that.hoverStrokeEl = this
+        }
       }
       // 离开元素
       strokeEl.onmouseout = function () {
+        // 初始化样式
+        this.style.cursor = that.option.editNewCursor
         // 设置鼠标样式
         that.editMouseCursor = null
         // 清空
@@ -1298,7 +1314,7 @@ var svg_db = {
         this.editEls.rect.setAttribute('y', miny)
         this.editEls.rect.setAttribute('width', width)
         this.editEls.rect.setAttribute('height', height)
-        this.editEls.rect.style.cursor = 'grab'
+        this.editEls.rect.style.cursor = this.option.editMoveCursor
       }
     }
     // 操作圆点
@@ -1450,7 +1466,7 @@ var svg_db = {
       inputEl.style.position = 'absolute'
       inputEl.style.top = '0px'
       inputEl.style.left = '0px'
-      inputEl.style.cursor = 'grab'
+      inputEl.style.cursor = this.option.editMoveCursor
       inputEl.style.outline = 'none'
       inputEl.style.wordBreak = 'break-all'
       inputEl.style.whiteSpace = 'normal'
@@ -1578,9 +1594,6 @@ var svg_db = {
   },
   // 输入框内容变换
   inputChange (stroke, svgSize) {
-    // 清空
-    this.hoverInputEl = null
-    this.hoverStrokeEl = null
     // 记录
     stroke.text = this.inputEl.innerHTML
     // 检查是否以 <div> 开头，如果是则需要替换第一个为空
@@ -1599,6 +1612,27 @@ var svg_db = {
     if (!this.option.isInputBlurRemove) {
       // 失去焦点则显示文本
       this.inputBlur()
+    }
+  },
+  // 检查鼠标按下时坐标是否在输入框元素内
+  inputReactCheck (e) {
+    // 输入框有值
+    if (this.hoverInputEl) {
+      // 输入框范围
+      var input = this.hoverInputEl
+      var minx = input.offsetLeft
+      var miny = input.offsetTop
+      var maxx = input.offsetLeft + input.offsetWidth
+      var maxy = input.offsetTop + input.offsetHeight
+      // 鼠标坐标
+      var x = e.offsetX + minx
+      var y = e.offsetY + miny
+      // 检查按下时是否在元素范围内
+      if(x < minx || x > maxx || y < miny || y > maxy){
+        // 不在
+        this.hoverInputEl = null
+        this.hoverStrokeEl = null
+      }
     }
   },
   // 文本框失去焦点
