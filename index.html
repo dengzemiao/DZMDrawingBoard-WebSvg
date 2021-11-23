@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>画板</title>
+  <style>
+    /* 基础样式 */
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    /* 内容容器 */
+    .container-content {
+      position: relative;
+      width: 100%;
+      height: 400px;
+      overflow: hidden;
+      background-color: yellowgreen;
+    }
+    .container-content video {
+      width: 100%;
+      height: 100%;
+    }
+    .container-content img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    /* 画板 */
+    #drawing-board {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* 功能条 */
+    .tool-bar {
+      padding: 0 20px;
+      margin-top: 20px;
+      width: 100%;
+      height: 50px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .tool-bar button {
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      color: rgba(0, 0, 0, 0.8);
+      border-radius: 4px;
+    }
+    .tool-bar button:active {
+      color: rgba(0, 0, 0, 0.4);
+    }
+    .tool-bar span {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 主容器 -->
+  <div class="container">
+    <!-- 内容容器 -->
+    <div class="container-content">
+      <!-- 视频（需要保持 object-fit: contain; 模式，默认就是该模式） -->
+      <!-- <video id="drawing-view" src="./vh1.mp4"></video> -->
+      <!-- 图片（需要保持 object-fit: contain; 模式，需手动配置）-->
+      <img id="drawing-view" src="./temp.jpeg"></img>
+      <!-- 画板元素 -->
+      <div id="drawing-board"></div>
+    </div>
+    <!-- 功能条 -->
+    <div class="tool-bar">
+      <div>
+        <!-- 注册 -->
+        <button onclick="touchRegister()">注册画板</button>
+        <!-- 销毁 -->
+        <button onclick="touchDestroy()">销毁画板</button>
+        <!-- 清空 -->
+        <button onclick="touchClear()">清空画板</button>
+        <!-- 撤销 -->
+        <button onclick="touchDrawRevoke()">撤销</button>
+        <!-- 恢复 -->
+        <button onclick="touchDrawRecovery()">恢复</button>
+        <!-- 编辑开关 -->
+        <button onclick="touchDrawEdit()" id="op-edit">禁止编辑</button>
+        <!-- 输出笔画数据 -->
+        <button onclick="touchDrawLog()">输出笔画数据</button>
+      </div>
+      <div style="margin-top: 20px;">
+        <!-- 笔画颜色 -->
+        <span>颜色:</span>
+        <input id="stroke-color" type="color" value="#F13E48" style="height: 22px;" onchange="drawColorChange(this)">
+        <!-- 笔画线宽（除了文本、箭头之前的类型） -->
+        <span>线宽:</span>
+        <select id="stroke-width" value="1" style="height: 22px;" onchange="drawWidthChange(this)">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+        <!-- 笔画字号（只针对文本类型） -->
+        <span>字号:</span>
+        <select id="stroke-font" value="1" style="height: 22px;" onchange="drawFontSizeChange(this)">
+          <option value="14">14</option>
+          <option value="16">16</option>
+          <option value="18">18</option>
+          <option value="20">20</option>
+          <option value="22">22</option>
+          <option value="24">24</option>
+        </select>
+      </div>
+      <div style="margin-top: 20px;">
+        <!-- 矩形 -->
+        <button onclick="setStrokeType('rect')">矩形</button>
+        <!-- 直线 -->
+        <button onclick="setStrokeType('line')">直线</button>
+        <!-- 圆形 -->
+        <button onclick="setStrokeType('circle')">圆形</button>
+        <!-- 椭圆 -->
+        <button onclick="setStrokeType('ellipse')">椭圆</button>
+        <!-- 文本 -->
+        <button onclick="setStrokeType('text')">文本</button>
+        <!-- 画笔 -->
+        <button onclick="setStrokeType('brush')">画笔</button>
+        <!-- 箭头 -->
+        <button onclick="setStrokeType('arrow')">箭头</button>
+      </div>
+    </div>
+  </div>
+  <!-- JS -->
+  <script src="./svg.js"></script>
+  <script>
+
+    // 获取视频(图片)宽高方式
+    // 链接地址：svg_db.viWH('https://media.w3.org/2010/05/sintel/trailer.mp4')
+    // 本地文件：svg_db.viWH('./vv.mp4')
+    // 上传组件：svg_db.viWH(file)
+
+    // 获取操作功能元素
+    var strokeColorEl = document.getElementById('stroke-color')
+    var strokeWidthEl = document.getElementById('stroke-width')
+    var strokeFontEl = document.getElementById('stroke-font')
+
+    // 手动初始化
+    touchRegister()
+    
+    // 选中笔画回调
+    var editStroke = null
+    var editStrokeEl = null
+    svg_db.selectStroke = (stroke, strokeEl) => {
+      // 输出（选中了则有值，取消或者新建则为空）
+      // 如果 (stroke.type === 'text' && !strokeEl) 则为新建文本框正在输入编辑
+      // console.log('选中了：', stroke, strokeEl)
+      // 记录
+      editStroke = stroke
+      editStrokeEl = strokeEl
+      // 切换配置
+      if (editStroke) {
+        // 使用笔画信息
+        strokeColorEl.value = editStroke.stroke
+        strokeWidthEl.value = editStroke.strokeWidth
+        strokeFontEl.value = editStroke.fontSize
+      } else {
+        // 使用配置信息
+        strokeColorEl.value = svg_db.option.strokeColor
+        strokeWidthEl.value = svg_db.option.strokeWidth
+        strokeFontEl.value = svg_db.option.fontSize
+      }
+      // 控制显示面板
+      var type = svg_db.option.strokeType
+      if (editStroke) { type = editStroke.type }
+      showOperation(type)
+    }
+
+    // 注册画板
+    function touchRegister () {
+      // 获取需要支持画板的视频(图片)标签
+      var target = document.getElementById('drawing-view')
+      // 获取当前视频(图片)尺寸
+      svg_db.viWH(target.src, (w, h) => {
+        // 获取画板承载元素
+        var dbEl = document.getElementById('drawing-board')
+        // 注册
+        svg_db.register(dbEl, w, h)
+        // 设置默认画笔类型
+        setStrokeType('arrow')
+      })
+    }
+    // 销毁画板
+    function touchDestroy () {
+      // 销毁
+      svg_db.destroy()
+    }
+    // 清空画板
+    function touchClear () {
+      // 清空
+      svg_db.clear()
+    }
+    // 撤销笔画
+    function touchDrawRevoke () {
+      // 撤销
+      svg_db.revoke()
+    }
+    // 恢复笔画
+    function touchDrawRecovery () {
+      // 恢复
+      svg_db.recovery()
+    }
+    // 编辑状态
+    function touchDrawEdit () {
+      // 切换状态
+      svg_db.option.isEdit = !svg_db.option.isEdit
+      // 显示文案
+      document.getElementById('op-edit').innerText = svg_db.option.isEdit ? '禁止编辑' : '允许编辑'
+    }
+    // 输出画板数据
+    function touchDrawLog () {
+      // 当前画板笔画数据，可以上传记录改数据，下次通过方法 setStrokes() 进行复原
+      console.log(svg_db.strokes)
+    }
+    // 设置画笔类型
+    function setStrokeType (type) {
+      // 设置类型
+      svg_db.setStrokeType(type)
+      // 控制显示面板
+      showOperation(type)
+    }
+    // 笔画颜色
+    function drawColorChange (e) {
+      // 有笔画对象
+      if (editStroke) {
+        // 修改笔画信息
+        editStroke.stroke = e.value
+        // 刷新（stroke：必填，strokeEl：可选，不传会先找一遍）
+        svg_db.reloadStroke(editStroke, editStrokeEl)
+      } else {
+        // 切换配置信息
+        svg_db.option.strokeColor = e.value
+      }
+    }
+    // 设置线宽
+    function drawWidthChange (e) {
+      // 有笔画对象
+      if (editStroke) {
+        // 修改笔画信息
+        editStroke.strokeWidth = Number(e.value)
+        // 刷新（stroke：必填，strokeEl：可选，不传会先找一遍）
+        svg_db.reloadStroke(editStroke, editStrokeEl)
+      } else {
+        // 切换配置信息
+        svg_db.option.strokeWidth = Number(e.value)
+      }
+    }
+    // 设置字号
+    function drawFontSizeChange (e) {
+      // 有笔画对象
+      if (editStroke) {
+        // 文本字号
+        if (editStroke.type === 'text') {
+          // 修改笔画信息
+          editStroke.fontSize = Number(e.value)
+          // 刷新（stroke：必填，strokeEl：可选，不传会先找一遍）
+          svg_db.reloadStroke(editStroke, editStrokeEl)
+        }
+      } else {
+        // 切换配置信息
+        svg_db.option.fontSize = Number(e.value)
+      }
+    }
+    // 控制显示面板
+    function showOperation (type) {
+      // 根据类型控制操作面板
+      if (type === 'text') {
+        // 文本
+        strokeColorEl.style.display = 'inline-block'
+        strokeWidthEl.style.display = 'none'
+        strokeFontEl.style.display = 'inline-block'
+      } else if (type === 'arrow') {
+        // 箭头
+        strokeColorEl.style.display = 'inline-block'
+        strokeWidthEl.style.display = 'none'
+        strokeFontEl.style.display = 'none'
+      } else {
+        // 其他
+        strokeColorEl.style.display = 'inline-block'
+        strokeWidthEl.style.display = 'inline-block'
+        strokeFontEl.style.display = 'none'
+      }
+    }
+  </script>
+</body>
+</html>
