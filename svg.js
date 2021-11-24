@@ -120,7 +120,6 @@ var svg_db = {
       // 最大高度（画板的最大高度尺寸）
       // 有画板的最大高度尺寸 'text(文本)' 才会支持缩放，否则不会进行缩放，比例按 1 处理，其他笔画类型不受影响。
       maxHeight: option.maxHeight || 0,
-      // 有输入框时，是否在失去焦点的时候进行移除，默认(false)是再次点击画板才会移除。
       // 是否可以编辑
       isEdit: option.isEdit || true,
       // 是否填充颜色（箭头类型）
@@ -133,7 +132,7 @@ var svg_db = {
       isAllowLeaveEditArea: option.isAllowLeaveEditArea || false,
       // 文本框贴贴文本内容排版优化（false：原格式，true：优化格式，去除多余的空格）
       isPasteTypesetting: option.isPasteTypesetting || true,
-      // 输入框失去焦点是否允许移除输入框
+      // 有输入框时，是否在失去焦点的时候进行移除，默认(false)是再次点击画板才会移除
       isInputBlurRemove: option.isInputBlurRemove || false,
       // 输入框边框提示文字
       inputPlaceholder: (typeof option.inputPlaceholder === 'string') ? option.inputPlaceholder : '请输入文字',
