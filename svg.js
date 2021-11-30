@@ -927,7 +927,7 @@ var svg_db = {
     // 获取画板宽高
     var svgSize = this.svgSize()
     // 透明颜色
-    var transparentColor = 'none'
+    var transparentColor = 'rgba(255, 255, 255, 0)'
     // 起始坐标
     var x = e.offsetX / svgSize.width
     var y = e.offsetY / svgSize.height
