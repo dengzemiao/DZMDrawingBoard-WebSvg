@@ -66,6 +66,8 @@ var svg_db = {
   mouseUpEvent: null,
   // 鼠标移动方法(方便移除)
   mouseMoveEvent: null,
+  // 鼠标按下移动的最后一次坐标
+  mouseLastOffset: null,
   // 窗口尺寸变化方法(方便移除)
   onResizeEvent: null,
   // 编辑鼠标显示状态
@@ -120,8 +122,10 @@ var svg_db = {
       // 最大高度（画板的最大高度尺寸）
       // 有画板的最大高度尺寸 'text(文本)' 才会支持缩放，否则不会进行缩放，比例按 1 处理，其他笔画类型不受影响。
       maxHeight: option.maxHeight || 0,
-      // 是否可以编辑
+      // 画板是否可以编辑（整个画板）
       isEdit: option.isEdit || true,
+      // 已经绘制好的笔画是否可以编辑（只针对绘制好的笔画，不影响新增笔画）
+      isEditStroke: option.isEditStroke || false,
       // 是否填充颜色（箭头类型）
       isFill: option.isFill || true,
       // 显示编辑矩形框（目前支持：'text(文本)' 其他画笔类型不需要支持）
@@ -486,6 +490,8 @@ var svg_db = {
   },
   // 鼠标按下处理
   handleMouseDownEvent (e) {
+    // 记录开始坐标
+    this.mouseLastOffset = e
     // 处理坐标信息
     var e = this.handleEventOffset(e)
     // 是否禁止编辑
@@ -500,12 +506,12 @@ var svg_db = {
       this.mouseDownEventEdit(e)
     } else if (this.hoverInputEl) {
       // 输入框移动
-      this.mouseDownEventInput(e)
+      if (this.isEditStroke) { this.mouseDownEventInput(e) }
     } else if (this.hoverStrokeEl) {
       // 移除输入框
       this.inputClear()
       // 笔画整体移动
-      this.mouseDownEventMove(e)
+      if (this.isEditStroke) { this.mouseDownEventMove(e) }
     } else {
       // 如果有输入框则返回
       if (this.inputEl) {
@@ -1060,6 +1066,8 @@ var svg_db = {
         strokeEl.ondblclick = () => {
           // 移除编辑图形
           this.drawEditClear()
+          // 是否禁止编辑已绘制笔画
+          if (!this.isEditStroke) { return }
           // 找到对应的笔画对象
           var strokeID = strokeEl.getAttribute('id')
           // 取得编辑笔画对象
@@ -1857,14 +1865,18 @@ var svg_db = {
     var obj = {
       offsetX: e.offsetX,
       offsetY: e.offsetY,
-      movementX: e.movementX,
-      movementY: e.movementY
+      movementX: e.offsetX - this.mouseLastOffset.offsetX,
+      movementY: e.offsetY - this.mouseLastOffset.offsetY
     }
     // 火狐浏览器处理
     if (isFirefox) {
       obj.offsetX = e.layerX
       obj.offsetY = e.layerY
+      obj.movementX = e.layerX - this.mouseLastOffset.layerX
+      obj.movementY = e.layerY - this.mouseLastOffset.layerY
     }
+    // 记录最后一次坐标
+    this.mouseLastOffset = e
     // 返回
     return obj
   },
