@@ -125,7 +125,7 @@ var svg_db = {
       // 画板是否可以编辑（整个画板）
       isEdit: option.isEdit || true,
       // 已经绘制好的笔画是否可以编辑（只针对绘制好的笔画，不影响新增笔画）
-      isEditStroke: option.isEditStroke || false,
+      isEditStroke: option.isEditStroke || true,
       // 是否填充颜色（箭头类型）
       isFill: option.isFill || true,
       // 显示编辑矩形框（目前支持：'text(文本)' 其他画笔类型不需要支持）
@@ -506,12 +506,12 @@ var svg_db = {
       this.mouseDownEventEdit(e)
     } else if (this.hoverInputEl) {
       // 输入框移动
-      if (this.isEditStroke) { this.mouseDownEventInput(e) }
+      if (this.option.isEditStroke) { this.mouseDownEventInput(e) }
     } else if (this.hoverStrokeEl) {
       // 移除输入框
       this.inputClear()
       // 笔画整体移动
-      if (this.isEditStroke) { this.mouseDownEventMove(e) }
+      if (this.option.isEditStroke) { this.mouseDownEventMove(e) }
     } else {
       // 如果有输入框则返回
       if (this.inputEl) {
@@ -723,6 +723,8 @@ var svg_db = {
     }
     // 鼠标移动
     this.mouseMoveEvent = (oe) => {
+      // 禁止编辑笔画
+      if (!this.option.isEditStroke) { return }
       // 处理坐标信息
       var e = this.handleEventOffset(oe)
       // 移动范围
@@ -1067,7 +1069,7 @@ var svg_db = {
           // 移除编辑图形
           this.drawEditClear()
           // 是否禁止编辑已绘制笔画
-          if (!this.isEditStroke) { return }
+          if (!this.option.isEditStroke) { return }
           // 找到对应的笔画对象
           var strokeID = strokeEl.getAttribute('id')
           // 取得编辑笔画对象

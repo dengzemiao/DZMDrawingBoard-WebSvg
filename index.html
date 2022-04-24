@@ -97,8 +97,10 @@
         <button onclick="touchDrawRevoke()">撤销</button>
         <!-- 恢复 -->
         <button onclick="touchDrawRecovery()">恢复</button>
-        <!-- 编辑开关 -->
-        <button onclick="touchDrawEdit()" id="op-edit">禁止编辑</button>
+        <!-- 编辑画板开关 -->
+        <button onclick="touchDrawEdit()" id="op-edit">禁止画板编辑</button>
+        <!-- 编辑笔画开关 -->
+        <button onclick="touchStrokeEdit()" id="op-edit-stroke">禁止笔画编辑</button>
         <!-- 输出笔画数据 -->
         <button onclick="touchDrawLog()">输出笔画数据</button>
       </div>
@@ -228,12 +230,23 @@
       // 恢复
       svg_db.recovery()
     }
-    // 编辑状态
+    // 编辑画板状态
     function touchDrawEdit () {
+      // 清空编辑状态
+      svg_db.drawEditClear()
       // 切换状态
       svg_db.option.isEdit = !svg_db.option.isEdit
       // 显示文案
-      document.getElementById('op-edit').innerText = svg_db.option.isEdit ? '禁止编辑' : '允许编辑'
+      document.getElementById('op-edit').innerText = svg_db.option.isEdit ? '禁止画板编辑' : '允许画板编辑'
+    }
+    // 编辑笔画状态
+    function touchStrokeEdit () {
+      // 清空编辑状态
+      svg_db.drawEditClear()
+      // 切换状态
+      svg_db.option.isEditStroke = !svg_db.option.isEditStroke
+      // 显示文案
+      document.getElementById('op-edit-stroke').innerText = svg_db.option.isEditStroke ? '禁止笔画编辑' : '允许笔画编辑'
     }
     // 输出画板数据
     function touchDrawLog () {
