@@ -228,8 +228,13 @@ var svg_db = {
       // 支持监听
       if (this.option.isDelete) {
         // 检查是否按下了 Backspace 键
-        if (event.key === 'Backspace') {
-          this.revoke(this.editStrokeIndex)
+        if (event.key === 'Backspace' && !!this.editStroke) {
+          // 删除
+          this.delete(this.editStrokeIndex)
+          // 设置鼠标样式
+          this.editMouseCursor = null
+          // 清空
+          this.hoverStrokeEl = null
         }
       }
     }
@@ -356,8 +361,32 @@ var svg_db = {
       this.drawEditChange(stroke)
     }
   },
+  // 删除笔画, index：必填
+  delete(index) {
+    // 是否禁止编辑
+    if (!this.option.isEdit) { return }
+    // 是否指定了笔画
+    if (index >= 0) {
+      // 清理辅助组件
+      this.clearComponents()
+      // 笔画对象
+      var stroke = this.copy(this.strokes[index])
+      // 移除笔画对象
+      this.strokes.splice(index, 1)
+      // 移除页面显示
+      this.svgEl.removeChild(this.strokeEls[index])
+      // 移除笔画元素
+      this.strokeEls.splice(index, 1)
+      // 移除恢复列表
+      this.recoveryStrokes = this.recoveryStrokes.filter(recoveryStroke => recoveryStroke.id !== stroke.id);
+      // 移除撤销列表
+      this.revokeStrokes = this.revokeStrokes.filter(revokeStroke => revokeStroke.id !== stroke.id);
+      // 添加到恢复列表
+      this.recoveryStrokes.push(stroke)
+    }
+  },
   // 撤销笔画
-  revoke (index) {
+  revoke () {
     // 是否禁止编辑
     if (!this.option.isEdit) { return }
     // 清理辅助组件
@@ -367,11 +396,7 @@ var svg_db = {
       // 索引
       var revokeCount = this.revokeStrokes.length
       var count = this.strokes.length
-      // 是否指定了笔画
       var lastIndex = revokeCount - 1
-      if (!!index || index === 0) {
-        lastIndex = index
-      }
       // 笔画对象
       var revokeStroke = this.revokeStrokes[lastIndex]
       // 获取当前显示数据
@@ -940,9 +965,9 @@ var svg_db = {
         var oldStroke = this.strokes[this.editStrokeIndex]
         this.strokes[this.editStrokeIndex] = this.editStroke
         this.revokeStrokes.push(oldStroke)
-        this.editStatus = false
       }
       // 清空
+      this.editStatus = false
       this.editStrokeIndex = null
       this.editStroke = null
     }
