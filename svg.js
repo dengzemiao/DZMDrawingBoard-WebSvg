@@ -370,7 +370,7 @@ var svg_db = {
       // 清理辅助组件
       this.clearComponents()
       // 笔画对象
-      var stroke = this.copy(this.strokes[index])
+      var lastStroke = this.copy(this.strokes[index])
       // 移除笔画对象
       this.strokes.splice(index, 1)
       // 移除页面显示
@@ -378,11 +378,11 @@ var svg_db = {
       // 移除笔画元素
       this.strokeEls.splice(index, 1)
       // 移除恢复列表
-      this.recoveryStrokes = this.recoveryStrokes.filter(recoveryStroke => recoveryStroke.id !== stroke.id);
+      this.recoveryStrokes = this.recoveryStrokes.filter(recoveryStroke => recoveryStroke.id !== lastStroke.id);
       // 移除撤销列表
-      this.revokeStrokes = this.revokeStrokes.filter(revokeStroke => revokeStroke.id !== stroke.id);
+      this.revokeStrokes = this.revokeStrokes.filter(revokeStroke => revokeStroke.id !== lastStroke.id);
       // 添加到恢复列表
-      this.recoveryStrokes.push(stroke)
+      // this.recoveryStrokes.push(lastStroke)
     }
   },
   // 撤销笔画
