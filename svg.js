@@ -70,6 +70,8 @@ var svg_db = {
   mouseLastOffset: null,
   // 窗口尺寸变化方法(方便移除)
   onResizeEvent: null,
+  // 按键监听
+  onKeydown: null,
   // 编辑鼠标显示状态
   editMouseCursor: null,
   // 编辑笔画对象
@@ -132,6 +134,8 @@ var svg_db = {
       isShowEditRect: option.isShowEditRect || true,
       // 是否支持窗口缩放 重新调整元素坐标
       isResize: option.isResize || true,
+      // 是否键盘删除（删除键）
+      isDelete: option.isDelete || true,
       // 是否允许鼠标在编辑或绘制过程中离开画板区域，离开则算停止本次手势，默认不允许
       isAllowLeaveEditArea: option.isAllowLeaveEditArea || false,
       // 文本框贴贴文本内容排版优化（false：原格式，true：优化格式，去除多余的空格）
@@ -219,6 +223,17 @@ var svg_db = {
       if (this.option.isResize) { this.onScale() }
     }
     window.addEventListener('resize', this.onResizeEvent)
+    // 按键监听
+    this.onKeydown= (event) => {
+      // 支持监听
+      if (this.option.isDelete) {
+        // 检查是否按下了 Backspace 键
+        if (event.key === 'Backspace') {
+          this.revoke(this.editStrokeIndex)
+        }
+      }
+    }
+    document.addEventListener('keydown', this.onKeydown);
     // 离开画板区域
     this.svgWrapperEl.onmouseout = (e) => {
       // 是否允许检查鼠标离开画板区域
@@ -238,6 +253,9 @@ var svg_db = {
       // 移除窗口变化监听
       window.removeEventListener('resize', this.onResizeEvent)
       this.onResizeEvent = null
+      // 移除按键监听
+      document.removeEventListener('keydown', this.onKeydown)
+      this.onKeydown = null
       // 清理辅助组件
       this.clearComponents()
       // 清空画笔
@@ -339,7 +357,7 @@ var svg_db = {
     }
   },
   // 撤销笔画
-  revoke () {
+  revoke (index) {
     // 是否禁止编辑
     if (!this.option.isEdit) { return }
     // 清理辅助组件
@@ -349,7 +367,11 @@ var svg_db = {
       // 索引
       var revokeCount = this.revokeStrokes.length
       var count = this.strokes.length
+      // 是否指定了笔画
       var lastIndex = revokeCount - 1
+      if (!!index || index === 0) {
+        lastIndex = index
+      }
       // 笔画对象
       var revokeStroke = this.revokeStrokes[lastIndex]
       // 获取当前显示数据
